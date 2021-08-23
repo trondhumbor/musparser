@@ -12,5 +12,5 @@ func main() {
 		fmt.Println("usage: musparser infile outfile")
 		return
 	}
-	musparser.Mus2midi(os.Args[1], os.Args[2])
+	musparser.MusToMidi(os.Args[1], os.Args[2])
 }

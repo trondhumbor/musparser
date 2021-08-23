@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type Header struct {
+type musHeader struct {
 	Sig               [4]byte
 	LenSong           uint16
 	OffSong           uint16
@@ -17,7 +17,7 @@ type Header struct {
 	Reserved          uint16
 }
 
-func Mus2midi(inPath, outPath string) {
+func MusToMidi(inPath, outPath string) {
 	file, err := os.Open(inPath)
 
 	if err != nil {
@@ -29,7 +29,7 @@ func Mus2midi(inPath, outPath string) {
 	const midiPercussionChannel = 9
 	const musPercussionChannel = 15
 
-	header := Header{}
+	header := musHeader{}
 	binary.Read(file, binary.LittleEndian, &header)
 
 	instrumentPatches := make([]uint16, header.NumInstruments)
@@ -91,6 +91,7 @@ func Mus2midi(inPath, outPath string) {
 				noteNumber,
 				64,
 			})
+
 		case 1: // play note
 			noteNumber := readByte()
 
@@ -111,16 +112,20 @@ func Mus2midi(inPath, outPath string) {
 				noteNumber & 0b0111_1111,
 				channelVelocity[channel],
 			})
+
 		case 2: // pitch bend
 			bendAmount := uint16(readByte()) * 64 // scale factor
+
 			writeDeltaTime()
 			binary.Write(outputBuffer, binary.LittleEndian, &[]byte{
 				0xE0 | channel,
 				byte(bendAmount & 0b0111_1111),
 				byte(bendAmount >> 7 & 0b0111_1111),
 			})
+
 		case 3: // system event
 			controller := readByte()
+
 			c := map[byte]byte{
 				10: 120, // all sounds off
 				11: 123, // all notes off
@@ -128,6 +133,7 @@ func Mus2midi(inPath, outPath string) {
 				13: 127, // poly
 				14: 121, // reset all controllers
 			}
+
 			writeDeltaTime()
 			binary.Write(outputBuffer, binary.LittleEndian, &[]byte{
 				0xB0 | channel,
@@ -168,7 +174,8 @@ func Mus2midi(inPath, outPath string) {
 			})
 
 		case 5: // end of measure
-			// This event is unused, and only left in here for completeness.
+		// This event is unused, and only left in here for completeness.
+
 		case 6: // finish
 			hitEnd = true
 			writeDeltaTime()
